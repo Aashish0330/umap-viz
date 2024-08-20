@@ -156,6 +156,11 @@ class Projection extends Component {
   setUpCamera() {
     let { width, height, mnist_embeddings } = this.props
 
+    if (!Array.isArray(mnist_embeddings) || mnist_embeddings.length === 0) {
+      console.warn('mnist_embeddings is empty or not an array')
+      return
+    }
+
     let aspect = this.camera.aspect
     let vFOV = this.camera.fov
     let rvFOV = THREE.Math.degToRad(vFOV)
@@ -208,6 +213,17 @@ class Projection extends Component {
 
   addPoints() {
     let { mnist_embeddings, mnist_labels, color_array } = this.props
+
+    if (!Array.isArray(mnist_embeddings) || mnist_embeddings.length === 0) {
+      console.warn('mnist_embeddings is empty or not an array')
+      return
+    }
+  
+    // Ensure mnist_labels is an array and has elements before proceeding
+    if (!Array.isArray(mnist_labels) || mnist_labels.length === 0) {
+      console.warn('mnist_labels is empty or not an array')
+      return
+    }
 
     // split embeddings and labels into chunks to match sprites
     let ranges = []
@@ -337,6 +353,12 @@ class Projection extends Component {
   }
 
   addBlankHighlightPoints() {
+
+    if (!Array.isArray(this.textures) || this.textures.length === 0) {
+      console.warn('Textures are not loaded or empty')
+      return
+    }
+
     let hover_container = new THREE.Group()
     this.scene.add(hover_container)
 

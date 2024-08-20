@@ -3,7 +3,7 @@ import Sidebar from './Sidebar'
 import Projection from './Projection'
 import About from './About'
 import * as _ from 'lodash'
-import LassoSelector from './components/LassoSelector'
+//import LassoSelector from './components/LassoSelector'
 
 // padding constructor
 function p(tb, lr) {

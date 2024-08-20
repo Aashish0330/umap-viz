@@ -2,7 +2,7 @@ import React, { Component } from 'react'
 import Layout from './Layout'
 import * as _ from 'lodash'
 import * as d3 from 'd3'
-import LassoSelector from './components/LassoSelector'
+//import LassoSelector from './components/LassoSelector'
 
 let algorithm_options = ['UMAP', 'T-SNE', 'UMAP min_dist=0.8']
 let algorithm_embedding_keys = [

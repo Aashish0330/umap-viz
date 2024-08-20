@@ -1,6 +1,17 @@
 import React, { Component } from 'react'
+import './index.css'  // Import the CSS file
 
 class Sidebar extends Component {
+  constructor(props) {
+    super(props)
+    this.state = {
+      isLassoSelectActive: false,
+      isZoomActive: true,
+    }
+    this.handleLassoSelect = this.handleLassoSelect.bind(this)
+    this.handleZoomToggle = this.handleZoomToggle.bind(this)
+  }
+
   componentDidMount() {
     this.props.setSidebarCanvas(this.side_canvas)
     this.handleSelectAlgorithm = this.handleSelectAlgorithm.bind(this)
@@ -9,6 +20,20 @@ class Sidebar extends Component {
   handleSelectAlgorithm(e) {
     let v = e.target.value
     this.props.selectAlgorithm(v)
+  }
+
+  handleLassoSelect() {
+    this.setState({
+      isLassoSelectActive: true,
+      isZoomActive: false,
+    })
+  }
+
+  handleZoomToggle() {
+    this.setState({
+      isLassoSelectActive: false,
+      isZoomActive: true,
+    })
   }
 
   render() {
@@ -24,25 +49,12 @@ class Sidebar extends Component {
       algorithm_choice,
     } = this.props
 
+    const { isLassoSelectActive, isZoomActive } = this.state
+
     return (
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'space-between',
-          flexGrow: 1,
-        }}
-      >
+      <div className="sidebar-container">
         <div>
-          {' '}
-          <div
-            style={{
-              padding: grem / 2,
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-            }}
-          >
+          <div className="sidebar-header">
             <div>Algorithm:</div>
             <select
               onChange={this.handleSelectAlgorithm}
@@ -56,14 +68,15 @@ class Sidebar extends Component {
             </select>
           </div>
           <div
+            className="sidebar-content"
             style={{
-              display: 'flex',
               flexDirection:
                 sidebar_orientation === 'horizontal' ? 'row' : 'column',
             }}
           >
             <div>
               <canvas
+                className="sidebar-canvas"
                 ref={side_canvas => {
                   this.side_canvas = side_canvas
                 }}
@@ -71,46 +84,44 @@ class Sidebar extends Component {
                 height={sidebar_image_size}
               />
             </div>
-            <div style={{ flexGrow: 1 }}>
+            <div className="sidebar-info">
               <div
+                className={`sidebar-label ${
+                  hover_index ? 'sidebar-label-active' : ''
+                }`}
                 style={{
                   background: hover_index
                     ? `rgb(${color_array[mnist_labels[hover_index]].join(',')})`
                     : 'transparent',
-                  color: hover_index ? '#000' : '#fff',
-                  padding: p(grem / 4, grem / 2),
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  transition: 'all 0.1s linear',
                 }}
               >
                 <div>Label:</div>
                 {hover_index ? <div>{mnist_labels[hover_index]}</div> : null}
               </div>
-              <div
-                style={{
-                  padding: p(grem / 4, grem / 2),
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                }}
-              >
+              <div className="sidebar-index">
                 Index:
                 {hover_index ? <div>{hover_index}</div> : null}
               </div>
             </div>
           </div>
         </div>
-        <div style={{ padding: grem / 2 }}>
-          <div>
-            An interactive UMAP visualization of the MNIST data set.{' '}
-            <button
-              onClick={() => {
-                this.props.toggleAbout(true)
-              }}
-            >
-              About
-            </button>
-          </div>
+        <div className="sidebar-buttons">
+          <button
+            onClick={this.handleLassoSelect}
+            className={`sidebar-button ${
+              isLassoSelectActive ? 'sidebar-button-active' : ''
+            }`}
+          >
+            Lasso Select
+          </button>
+          <button
+            onClick={this.handleZoomToggle}
+            className={`sidebar-button ${
+              isZoomActive ? 'sidebar-button-active' : ''
+            }`}
+          >
+            Zoom
+          </button>
         </div>
       </div>
     )

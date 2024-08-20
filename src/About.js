@@ -4,7 +4,7 @@ import { about_text } from './Content'
 
 class About extends Component {
   render() {
-    let { grem, p } = this.props
+    let { grem} = this.props
     return (
       <div
         style={{

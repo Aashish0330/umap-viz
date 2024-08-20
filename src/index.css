@@ -12,3 +12,100 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New",
     monospace;
 }
+
+
+.lasso-select-button {
+  background-color: blue;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  text-decoration: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.lasso-select-button:hover {
+  background-color: darkblue;
+}
+
+/* index.css */
+
+.sidebar-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  flex-grow: 1;
+}
+
+.sidebar-header {
+  padding: 10px; /* Replace 10px with grem/2 if needed */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sidebar-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-canvas {
+  width: 100%;
+  height: 100%;
+}
+
+.sidebar-info {
+  flex-grow: 1;
+}
+
+.sidebar-label {
+  background: transparent;
+  color: #fff;
+  padding: 5px 10px; /* Replace with p(grem / 4, grem / 2) if needed */
+  display: flex;
+  justify-content: space-between;
+  transition: all 0.1s linear;
+}
+
+.sidebar-label-active {
+  background: rgb(128, 177, 211); /* Example color, replace with the dynamic one */
+  color: #000;
+}
+
+.sidebar-index {
+  padding: 5px 10px; /* Replace with p(grem / 4, grem / 2) if needed */
+  display: flex;
+  justify-content: space-between;
+}
+
+.sidebar-buttons {
+  margin-top: -50px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.sidebar-button {
+  background-color: gray;
+  color: white;
+  padding: 10px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  text-decoration: none;
+  flex-grow: 1;
+  transition: background-color 0.3s ease;
+  margin-right: 10px;
+}
+
+.sidebar-button:hover {
+  background-color: darkgray;
+}
+
+.sidebar-button-active {
+  background-color: blue;
+}
+
+.sidebar-button-active:hover {
+  background-color: darkblue;
+}
