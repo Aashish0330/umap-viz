@@ -4,6 +4,8 @@ import * as _ from 'lodash'
 import * as d3 from 'd3'
 import * as TWEEN from '@tweenjs/tween.js'
 import zoom from './zoom.png'
+import lassoIcon from './lasso.png'
+//import { moveMessagePortToContext } from 'worker_threads'
 
 // Constants for sprite sheets
 let sprite_side = 73
@@ -23,7 +25,6 @@ let mnist_images = mnist_tile_locations.map(src => {
   img.src = src
   return img
 })
-
 let zoomScaler = input => {
   let scale1 = d3
     .scaleLinear()
@@ -50,6 +51,8 @@ class Projection extends Component {
     super(props);
     this.state = {
       isZoomEnabled: true,
+      isLassoActive: false,
+      lassoPoints: [], //this stores points drawn by lasso
     }
     this.init = this.init.bind(this)
     this.addPoints = this.addPoints.bind(this)
@@ -61,12 +64,42 @@ class Projection extends Component {
     this.changeEmbeddings = this.changeEmbeddings.bind(this)
     this.zoomHandler = this.zoomHandler.bind(this);
     this.toggleZoom = this.toggleZoom.bind(this);
+    this.toggleLasso = this.toggleLasso.bind(this);  // Bind toggleLasso here
+    this.enableLasso = this.enableLasso.bind(this);
+    this.disableLasso = this.disableLasso.bind(this);
   }
+
+  
+  /*toggleZoom() {
+    this.setState((prevState) => ({
+      isZoomEnabled: !prevState.isZoomEnabled,
+    }));
+  }*/
+
+  //toggle zoom and lasso at the same time
 
   toggleZoom() {
     this.setState((prevState) => ({
       isZoomEnabled: !prevState.isZoomEnabled,
-    }));
+      isLassoActive: prevState.isZoomEnabled ? false : prevState.isLassoActive,  // Disable lasso when enabling zoom
+    }), () => {
+      if (!this.state.isZoomEnabled) {
+        this.disableLasso();  // If zoom is enabled, disable lasso
+      }
+    });
+  }
+
+  toggleLasso() {
+    this.setState((prevState) => ({
+      isLassoActive: !prevState.isLassoActive,
+      isZoomEnabled: prevState.isLassoActive ? false : prevState.isZoomEnabled,  // Disable zoom when enabling lasso
+    }), () => {
+      if (this.state.isLassoActive) {
+        this.enableLasso();
+      } else {
+        this.disableLasso();
+      }
+    });
   }
 
   /*toggleZoom() {
@@ -92,6 +125,99 @@ class Projection extends Component {
       }
     }
   }*/
+
+  // Lasso operations 
+/*toggleLasso() {
+  this.setState((prevState) => ({
+    isLassoActive: !prevState.isLassoActive,
+  }), () => {
+    if (this.state.isLassoActive) {
+      this.enableLasso();
+    } else {
+      this.disableLasso();
+    }
+  });
+}*/
+
+enableLasso() {
+  const svg = d3.select(this.mount).append("svg")
+    .attr("class", "lasso")
+    .style("position", "absolute")
+    .style("top", 0)
+    .style("left", 0)
+    .style("width", "100%")
+    .style("height", "100%")
+    .style("z-index", 2) // Ensure the SVG is above the canvas
+    .style("pointer-events", "none");
+
+  console.log("SVG element added: ", svg.node());
+
+  let lassoPoints = [];
+  let lassoLine = svg.append("path")
+    .attr("class", "lasso-path")
+    .attr("stroke", "red")
+    .attr("stroke-width", 2)
+    .attr("fill", "none");
+
+  console.log("Path element created:", lassoLine.node()); 
+  
+  const view = d3.select(this.renderer.domElement);
+
+  const onMouseMove = () => {
+    console.log("Mouse move detected");
+    const [mouseX, mouseY] = d3.mouse(svg.node());
+    lassoPoints.push([mouseX, mouseY]);
+    console.log("Lasso points array:", lassoPoints); 
+    lassoLine.attr("d", d3.line()(lassoPoints));
+  };
+
+  view.on("mousedown", () => {
+    console.log("Mouse down");
+
+    if (lassoPoints.length > 0) {
+      // Close the previous polygon
+      lassoPoints.push(lassoPoints[0]);
+      lassoLine.attr("d", d3.line()(lassoPoints))
+        .attr("fill", "rgba(255, 0, 0, 0.3)");  // Fill the polygon with semi-transparent red
+      
+      // Disable further lasso drawing
+      view.on("mousemove", null);
+      view.on("mousedown", null);
+    } else {
+      const [mouseX, mouseY] = d3.mouse(svg.node());
+      lassoPoints.push([mouseX, mouseY]);
+      view.on("mousemove", onMouseMove);
+    }
+  });
+
+  view.on("mouseup", () => {
+    console.log("Mouse up");
+    if (lassoPoints.length > 0) {
+      // Close the polygon by connecting the last point to the first point
+      lassoPoints.push(lassoPoints[0]);
+      lassoLine.attr("d", d3.line()(lassoPoints))
+        .attr("fill", "rgba(255, 0, 0, 0.3)");  // Fill the polygon with semi-transparent red
+
+      console.log('Lasso polygon points:', lassoPoints);
+
+      // Disable further lasso drawing
+      view.on("mousemove", null);
+      view.on("mousedown", null);
+    }
+  });
+}
+
+disableLasso() {
+  d3.select("svg.lasso").remove();
+  const view = d3.select(this.renderer.domElement);
+  view.on("mousedown", null);
+  view.on("mousemove", null);
+  view.on("mouseup", null);
+}
+
+
+
+  
 
 
 
@@ -682,6 +808,29 @@ class Projection extends Component {
             }}
           />
         </button>
+        <button
+          onClick={this.toggleLasso}
+          style={{
+            position: 'absolute',
+            zIndex: 1,
+            top: '10px',
+            left: '44px', // Adjust left to position the button next to the zoom button
+            backgroundColor: 'transparent',
+            border: 'none',
+            cursor: 'pointer',
+            padding: '0',
+          }}
+        >
+          <img
+            src={lassoIcon}
+            alt="Lasso Toggle"
+            style={{
+              filter: this.state.isLassoActive ? 'invert(100%)' : 'invert(50%)',
+              width: '24px',
+              height: '24px',
+            }}
+          />
+        </button>
         <div
           style={{ width: width, height: height, overflow: 'hidden' }}
           ref={mount => {
@@ -691,6 +840,6 @@ class Projection extends Component {
       </div>
     );
   }
-}
+}  
 
 export default Projection
