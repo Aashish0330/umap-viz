@@ -3,6 +3,7 @@ import * as THREE from 'three'
 import * as _ from 'lodash'
 import * as d3 from 'd3'
 import * as TWEEN from '@tweenjs/tween.js'
+import zoom from './zoom.png'
 
 // Constants for sprite sheets
 let sprite_side = 73
@@ -46,8 +47,10 @@ let zoomScaler = input => {
 
 class Projection extends Component {
   constructor(props) {
-    super(props)
-    this.state = {}
+    super(props);
+    this.state = {
+      isZoomEnabled: true,
+    }
     this.init = this.init.bind(this)
     this.addPoints = this.addPoints.bind(this)
     this.handleResize = this.handleResize.bind(this)
@@ -56,7 +59,48 @@ class Projection extends Component {
     this.getScaleFromZ = this.getScaleFromZ.bind(this)
     this.getZFromScale = this.getZFromScale.bind(this)
     this.changeEmbeddings = this.changeEmbeddings.bind(this)
+    this.zoomHandler = this.zoomHandler.bind(this);
+    this.toggleZoom = this.toggleZoom.bind(this);
   }
+
+  toggleZoom() {
+    this.setState((prevState) => ({
+      isZoomEnabled: !prevState.isZoomEnabled,
+    }));
+  }
+
+  /*toggleZoom() {
+    this.setState(
+      prevState => ({
+        isZoomEnabled: !prevState.isZoomEnabled,
+      }),
+      () => {
+        // Reapply camera setup after zoom toggle
+        this.setUpCamera();
+      }
+    );
+  }*/
+
+
+  /*componentDidUpdate(prevProps) {
+    // Check if the zoom state has changed
+    if (prevProps.isZoomEnabled !== this.props.isZoomEnabled) {
+      if (this.props.isZoomEnabled) {
+        this.enableZoom();
+      } else {
+        this.disableZoom();
+      }
+    }
+  }*/
+
+
+
+  //toggles zoom
+  /*toggleZoom() {
+    this.setState(prevState => ({
+      zoomEnabled: !prevState.zoomEnabled
+    }));
+  }*/
 
   changeEmbeddings(prev_choice, new_choice) {
     // assumes mnist embeddings has been updated
@@ -135,7 +179,7 @@ class Projection extends Component {
     this.d3_zoom.transform(view, resize_transform)
   }
 
-  zoomHandler() {
+  /*zoomHandler() {
     let d3_transform = d3.event.transform
 
     let scale = d3_transform.k
@@ -150,6 +194,26 @@ class Projection extends Component {
     let point_group = this.scene.children[0].children
     for (let c = 0; c < point_group.length; c++) {
       point_group[c].material.uniforms.size.value = new_size
+    }
+  }*/
+
+  zoomHandler() {
+    if (!this.state.isZoomEnabled) return; // Skip zooming if not enabled
+  
+    let d3_transform = d3.event.transform;
+  
+    let scale = d3_transform.k;
+    let x = -(d3_transform.x - this.props.width / 2) / scale;
+    let y = (d3_transform.y - this.props.height / 2) / scale;
+    let z = this.getZFromScale(scale);
+  
+    this.camera.position.set(x, y, z);
+  
+    // point size scales at end of zoom
+    let new_size = zoomScaler(z);
+    let point_group = this.scene.children[0].children;
+    for (let c = 0; c < point_group.length; c++) {
+      point_group[c].material.uniforms.size.value = new_size;
     }
   }
 
@@ -196,7 +260,7 @@ class Projection extends Component {
     this.camera.position.z = camera_z_start * 1.1
 
     // set up zoom
-    this.d3_zoom = d3
+    /*this.d3_zoom = d3
       .zoom()
       .scaleExtent([this.getScaleFromZ(far - 1), this.getScaleFromZ(0.1)])
       .on('zoom', this.zoomHandler.bind(this))
@@ -208,8 +272,25 @@ class Projection extends Component {
     var initial_transform = d3.zoomIdentity
       .translate(width / 2, height / 2)
       .scale(initial_scale)
-    this.d3_zoom.transform(view, initial_transform)
-  }
+    this.d3_zoom.transform(view, initial_transform)*/
+
+    // Only set up zoom if enabled
+    if (this.state.isZoomEnabled) {
+      this.d3_zoom = d3
+        .zoom()
+        .scaleExtent([this.getScaleFromZ(far - 1), this.getScaleFromZ(0.1)])
+        .on('zoom', this.zoomHandler.bind(this));
+  
+      let view = d3.select(this.mount);
+      this.view = view;
+      view.call(this.d3_zoom);
+      let initial_scale = this.getScaleFromZ(this.camera.position.z);
+      var initial_transform = d3.zoomIdentity
+        .translate(width / 2, height / 2)
+        .scale(initial_scale);
+      this.d3_zoom.transform(view, initial_transform);
+    }
+}
 
   addPoints() {
     let { mnist_embeddings, mnist_labels, color_array } = this.props
@@ -575,15 +656,40 @@ class Projection extends Component {
   
 
   render() {
-    let { width, height } = this.props
+    let { width, height } = this.props;
     return (
-      <div
-        style={{ width: width, height: height, overflow: 'hidden' }}
-        ref={mount => {
-          this.mount = mount
-        }}
-      />
-    )
+      <div style={{ position: 'relative' }}>
+        <button
+          onClick={this.toggleZoom}
+          style={{
+            position: 'absolute',
+            zIndex: 1,
+            top: '10px',
+            left: '10px',
+            backgroundColor: 'transparent',
+            border: 'none',
+            cursor: 'pointer',
+            padding: '0',
+          }}
+        >
+          <img
+            src={zoom}
+            alt="Zoom Toggle"
+            style={{
+              filter: this.state.isZoomEnabled ? 'invert(100%)' : 'invert(50%)',
+              width: '24px',
+              height: '24px',
+            }}
+          />
+        </button>
+        <div
+          style={{ width: width, height: height, overflow: 'hidden' }}
+          ref={mount => {
+            this.mount = mount;
+          }}
+        />
+      </div>
+    );
   }
 }
 

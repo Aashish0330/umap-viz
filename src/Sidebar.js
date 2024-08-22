@@ -26,15 +26,20 @@ class Sidebar extends Component {
     this.setState({
       isLassoSelectActive: true,
       isZoomActive: false,
-    })
+    }, () => {
+      this.props.handleZoomToggle(false);  // Disable zoom in Projection.js
+    });
   }
 
   handleZoomToggle() {
-    this.setState({
+    this.setState(prevState => ({
       isLassoSelectActive: false,
-      isZoomActive: true,
-    })
-  }
+      isZoomActive: !prevState.isZoomActive,
+    }), () => {
+      this.props.handleZoomToggle(this.state.isZoomActive);  // Toggle zoom in Projection.js
+    });
+  }  
+
 
   render() {
     let {
@@ -106,22 +111,14 @@ class Sidebar extends Component {
           </div>
         </div>
         <div className="sidebar-buttons">
-          <button
+          {/* <button
             onClick={this.handleLassoSelect}
             className={`sidebar-button ${
               isLassoSelectActive ? 'sidebar-button-active' : ''
             }`}
           >
             Lasso Select
-          </button>
-          <button
-            onClick={this.handleZoomToggle}
-            className={`sidebar-button ${
-              isZoomActive ? 'sidebar-button-active' : ''
-            }`}
-          >
-            Zoom
-          </button>
+          </button> */}
         </div>
       </div>
     )

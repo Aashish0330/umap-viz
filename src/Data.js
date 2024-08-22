@@ -4,7 +4,7 @@ import * as _ from 'lodash'
 import * as d3 from 'd3'
 //import LassoSelector from './components/LassoSelector'
 
-let algorithm_options = ['UMAP', 'T-SNE', 'UMAP min_dist=0.8']
+let algorithm_options = ['UMAP','T-SNE', 'UMAP min_dist=0.8'] //'T-SNE', 'UMAP min_dist=0.8'
 let algorithm_embedding_keys = [
   'mnist_embeddings',
   'tsne_mnist_embeddings',
@@ -61,6 +61,7 @@ class Data extends Component {
           tsne_mnist_embeddings: scaled_embeddings,
         })
       })
+      
     fetch(`${process.env.PUBLIC_URL}/mnist_labels.json`)
       .then(response => response.json())
       .then(mnist_labels =>
