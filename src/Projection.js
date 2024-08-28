@@ -139,7 +139,8 @@ class Projection extends Component {
   });
 }*/
 
-enableLasso() {
+//working one 
+/*enableLasso() {
   const svg = d3.select(this.mount).append("svg")
     .attr("class", "lasso")
     .style("position", "absolute")
@@ -205,7 +206,106 @@ enableLasso() {
       view.on("mousedown", null);
     }
   });
+}*/
+
+
+//log the points inside the shaded polygon
+enableLasso() {
+  const svg = d3.select(this.mount).append("svg")
+    .attr("class", "lasso")
+    .style("position", "absolute")
+    .style("top", 0)
+    .style("left", 0)
+    .style("width", "100%")
+    .style("height", "100%")
+    .style("z-index", 2) // Ensure the SVG is above the canvas
+    .style("pointer-events", "none");
+
+  let lassoPoints = [];
+  let lassoLine = svg.append("path")
+    .attr("class", "lasso-path")
+    .attr("stroke", "red")
+    .attr("stroke-width", 2)
+    .attr("fill", "none");
+
+  const view = d3.select(this.renderer.domElement);
+
+  const onMouseMove = () => {
+    const [mouseX, mouseY] = d3.mouse(svg.node());
+    lassoPoints.push([mouseX, mouseY]);
+    lassoLine.attr("d", d3.line()(lassoPoints));
+  };
+
+  view.on("mousedown", () => {
+    if (lassoPoints.length > 0) {
+      lassoPoints.push(lassoPoints[0]);
+      lassoLine.attr("d", d3.line()(lassoPoints))
+        .attr("fill", "rgba(255, 0, 0, 0.3)");
+
+      view.on("mousemove", null);
+      view.on("mousedown", null);
+      
+      this.selectPointsInsideLasso(lassoPoints); // Select points inside the lasso
+    } else {
+      const [mouseX, mouseY] = d3.mouse(svg.node());
+      lassoPoints.push([mouseX, mouseY]);
+      view.on("mousemove", onMouseMove);
+    }
+  });
+
+  view.on("mouseup", () => {
+    if (lassoPoints.length > 0) {
+      lassoPoints.push(lassoPoints[0]);
+      lassoLine.attr("d", d3.line()(lassoPoints))
+        .attr("fill", "rgba(255, 0, 0, 0.3)");
+
+      view.on("mousemove", null);
+      view.on("mousedown", null);
+
+      this.selectPointsInsideLasso(lassoPoints); // Select points inside the lasso
+    }
+  });
 }
+
+
+selectPointsInsideLasso(lassoPoints) {
+  const lassoPolygon = d3.polygonHull(lassoPoints); // Create the lasso polygon
+  if (!lassoPolygon) return;
+
+  const selectedEmbeddings = [];
+  const point_group = this.scene.children[0].children;
+
+  point_group.forEach(points => {
+    const positions = points.geometry.attributes.position.array;
+    const numVertices = positions.length / 3;
+
+    for (let i = 0; i < numVertices; i++) {
+      const x = positions[i * 3];
+      const y = positions[i * 3 + 1];
+      const z = positions[i * 3 + 2];
+
+      // Create a vector for the point in world coordinates
+      const worldPosition = new THREE.Vector3(x, y, z);
+
+      // Convert the world position to screen coordinates
+      const screenPosition = worldPosition.clone().project(this.camera);
+      
+      // Map the screen position to pixel coordinates
+      const pixelX = (screenPosition.x * 0.5 + 0.5) * this.props.width;
+      const pixelY = (-screenPosition.y * 0.5 + 0.5) * this.props.height;
+
+      // Check if the pixel coordinates are inside the lasso polygon
+      if (d3.polygonContains(lassoPolygon, [pixelX, pixelY])) {
+        const embedding = [x, y, z];
+        selectedEmbeddings.push(embedding);
+      }
+    }
+  });
+
+  console.log('Selected embeddings:', selectedEmbeddings); // Log the selected embeddings
+  this.setState({ selectedEmbeddings }); // Save the embeddings to state if needed
+}
+
 
 disableLasso() {
   d3.select("svg.lasso").remove();
