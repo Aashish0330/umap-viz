@@ -4,6 +4,7 @@ import * as _ from 'lodash'
 import * as d3 from 'd3'
 import * as TWEEN from '@tweenjs/tween.js'
 import zoom from './zoom.png'
+import reset from './reset.png'
 import lassoIcon from './lasso.png'
 //import { moveMessagePortToContext } from 'worker_threads'
 
@@ -78,7 +79,7 @@ class Projection extends Component {
 
   //toggle zoom and lasso at the same time
 
-  toggleZoom() {
+  /*toggleZoom() {
     this.setState((prevState) => ({
       isZoomEnabled: !prevState.isZoomEnabled,
       isLassoActive: prevState.isZoomEnabled ? false : prevState.isLassoActive,  // Disable lasso when enabling zoom
@@ -100,7 +101,35 @@ class Projection extends Component {
         this.disableLasso();
       }
     });
+  }*/
+
+  toggleZoom() {
+    this.setState((prevState) => ({
+      isZoomEnabled: !prevState.isZoomEnabled,
+      isLassoActive: false,  // Disable lasso when enabling zoom
+    }), () => {
+      if (this.state.isZoomEnabled) {
+        this.disableLasso();
+        this.setUpCamera(); // Reset the camera to default position
+      }
+    });
   }
+  
+  toggleLasso() {
+    this.setState((prevState) => ({
+      isLassoActive: !prevState.isLassoActive,
+      isZoomEnabled: false,  // Disable zoom when enabling lasso
+    }), () => {
+      if (this.state.isLassoActive) {
+        this.enableLasso();
+      } else {
+        this.disableLasso();
+        this.setUpCamera(); // Reset the camera to default position
+      }
+    });
+  }
+  
+
 
   /*toggleZoom() {
     this.setState(
@@ -268,7 +297,7 @@ enableLasso() {
 }
 
 
-selectPointsInsideLasso(lassoPoints) {
+/*selectPointsInsideLasso(lassoPoints) {
   const lassoPolygon = d3.polygonHull(lassoPoints); // Create the lasso polygon
   if (!lassoPolygon) return;
 
@@ -282,10 +311,10 @@ selectPointsInsideLasso(lassoPoints) {
     for (let i = 0; i < numVertices; i++) {
       const x = positions[i * 3];
       const y = positions[i * 3 + 1];
-      const z = positions[i * 3 + 2];
+      // const z = positions[i * 3 + 2];
 
       // Create a vector for the point in world coordinates
-      const worldPosition = new THREE.Vector3(x, y, z);
+      const worldPosition = new THREE.Vector3(x, y);
 
       // Convert the world position to screen coordinates
       const screenPosition = worldPosition.clone().project(this.camera);
@@ -296,7 +325,7 @@ selectPointsInsideLasso(lassoPoints) {
 
       // Check if the pixel coordinates are inside the lasso polygon
       if (d3.polygonContains(lassoPolygon, [pixelX, pixelY])) {
-        const embedding = [x, y, z];
+        const embedding = [x, y];
         selectedEmbeddings.push(embedding);
       }
     }
@@ -304,7 +333,113 @@ selectPointsInsideLasso(lassoPoints) {
 
   console.log('Selected embeddings:', selectedEmbeddings); // Log the selected embeddings
   this.setState({ selectedEmbeddings }); // Save the embeddings to state if needed
+}*/
+
+
+selectPointsInsideLasso(lassoPoints) {
+  const lassoPolygon = d3.polygonHull(lassoPoints); // Create the lasso polygon
+  if (!lassoPolygon) {
+    console.log('Lasso polygon is not valid.');
+    return;
+  }
+
+  const selectedEmbeddings = [];
+  const point_group = this.scene.children[0].children;
+
+  let minX = Infinity, maxX = -Infinity;
+  let minY = Infinity, maxY = -Infinity;
+
+  point_group.forEach(points => {
+    const positions = points.geometry.attributes.position.array;
+    const numVertices = positions.length / 3;
+
+    for (let i = 0; i < numVertices; i++) {
+      const x = positions[i * 3];
+      const y = positions[i * 3 + 1];
+
+      // Convert the point from world space to screen space
+      const worldPosition = new THREE.Vector3(x, y, 0);
+      const screenPosition = worldPosition.project(this.camera);
+      
+      const pixelX = (screenPosition.x * 0.5 + 0.5) * this.props.width;
+      const pixelY = (-screenPosition.y * 0.5 + 0.5) * this.props.height;
+
+      console.log(`Checking point (${pixelX}, ${pixelY}) in screen space`);
+
+      // Check if the screen space position is inside the lasso polygon
+      if (d3.polygonContains(lassoPolygon, [pixelX, pixelY])) {
+        console.log(`Point (${pixelX}, ${pixelY}) is inside the lasso polygon`);
+        selectedEmbeddings.push([x, y]);
+
+        // Update bounding box
+        if (x < minX) minX = x;
+        if (x > maxX) maxX = x;
+        if (y < minY) minY = y;
+        if (y > maxY) maxY = y;
+      } else {
+        console.log(`Point (${pixelX}, ${pixelY}) is outside the lasso polygon`);
+      }
+    }
+  });
+
+  console.log('Selected embeddings:', selectedEmbeddings);
+  console.log('Bounding Box:', { minX, maxX, minY, maxY });
+
+  if (selectedEmbeddings.length === 0) {
+    console.log('No points were selected inside the lasso.');
+    return;
+  }
+
+  this.setState({ selectedEmbeddings }); // Save the embeddings to state if needed
+
+  // Calculate the center of the selected region
+  const centerX = (minX + maxX) / 2;
+  const centerY = (minY + maxY) / 2;
+
+  console.log('Center of Selected Region:', { centerX, centerY });
+
+  // Adjust the camera to focus on the selected region
+  this.adjustCameraToBoundingBox(minX, maxX, minY, maxY, centerX, centerY);
 }
+
+
+
+adjustCameraToBoundingBox(minX, maxX, minY, maxY, centerX, centerY) {
+  // Calculate the width and height of the selected region
+  const width = maxX - minX;
+  const height = maxY - minY;
+
+  // Determine the scale to fit the selected region within the view
+  const aspectRatio = this.camera.aspect;
+  let scale;
+
+  if (width / height > aspectRatio) {
+    // Fit to width
+    scale = width / this.props.width;
+  } else {
+    // Fit to height
+    scale = height / this.props.height;
+  }
+
+  // Set the new camera position to center on the selected region
+  this.camera.position.set(centerX, centerY, this.getZFromScale(scale));
+
+  // Update the camera's projection matrix to apply changes
+  this.camera.updateProjectionMatrix();
+
+  // Optionally, you can trigger a re-render here if needed
+  this.renderer.render(this.scene, this.camera);
+}
+
+
+
+animate() {
+  requestAnimationFrame(this.animate);
+  TWEEN.update();
+  this.renderer.render(this.scene, this.camera);
+}
+
+
 
 
 disableLasso() {
@@ -313,11 +448,9 @@ disableLasso() {
   view.on("mousedown", null);
   view.on("mousemove", null);
   view.on("mouseup", null);
+
+  this.setUpCamera(); // Reset camera to ensure it's ready for further interactions
 }
-
-
-
-  
 
 
 
@@ -377,6 +510,9 @@ disableLasso() {
   }
 
   getZFromScale(scale) {
+    const {width, height} = this.props;
+    const aspectRatio = this.camera.aspect;
+    const maxDim = Math.max(width,height);
     let rvFOV = THREE.Math.degToRad(this.camera.fov)
     let scale_height = this.props.height / scale
     let camera_z_position = scale_height / (2 * Math.tan(rvFOV / 2))
@@ -880,6 +1016,12 @@ disableLasso() {
     this.mount.removeChild(this.renderer.domElement)
   }
   
+  resetView() {
+    this.setState({ selectedEmbeddings: [] });
+    console.log('Resetting Camera View');
+    this.setUpCamera();
+  }
+  
 
   render() {
     let { width, height } = this.props;
@@ -914,7 +1056,7 @@ disableLasso() {
             position: 'absolute',
             zIndex: 1,
             top: '10px',
-            left: '44px', // Adjust left to position the button next to the zoom button
+            left: '44px',
             backgroundColor: 'transparent',
             border: 'none',
             cursor: 'pointer',
@@ -929,6 +1071,25 @@ disableLasso() {
               width: '24px',
               height: '24px',
             }}
+          />
+        </button>
+        <button
+          onClick={this.resetView.bind(this)}
+          style={{
+            position: 'absolute',
+            zIndex: 1,
+            top: '10px',
+            left: '78px',
+            backgroundColor: 'transparent',
+            border: 'none',
+            cursor: 'pointer',
+            padding: '0',
+          }}
+        >
+          <img
+            src={reset}  // Import a reset icon or use a text label
+            alt="Reset View"
+            style={{ width: '24px', height: '24px' }}
           />
         </button>
         <div

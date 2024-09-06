@@ -9,6 +9,7 @@ let algorithm_embedding_keys = [
   'mnist_embeddings',
   'tsne_mnist_embeddings',
   'md08_umap_mnist_embeddings',
+  'fashion_mnist_embeddings'
 ]
 
 class Data extends Component {
@@ -18,6 +19,7 @@ class Data extends Component {
       mnist_embeddings: null,
       mnist_labels: null,
       md08_umap_mnist_embeddings: null,
+      fashion_mnist_embeddings: null
     }
   }
 
@@ -37,6 +39,14 @@ class Data extends Component {
 
   componentDidMount() {
     fetch(`${process.env.PUBLIC_URL}/mnist_embeddings.json`)
+      .then(response => response.json())
+      .then(mnist_embeddings => {
+        let scaled_embeddings = this.scaleEmbeddings(mnist_embeddings)
+        this.setState({
+          mnist_embeddings: scaled_embeddings,
+        })
+      })
+    fetch(`${process.env.PUBLIC_URL}/fashion_mnist_embeddings.json`)
       .then(response => response.json())
       .then(mnist_embeddings => {
         let scaled_embeddings = this.scaleEmbeddings(mnist_embeddings)
