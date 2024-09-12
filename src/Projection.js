@@ -54,6 +54,7 @@ class Projection extends Component {
       isZoomEnabled: true,
       isLassoActive: false,
       lassoPoints: [], //this stores points drawn by lasso
+      isPolygonDrawn: false,
     }
     this.init = this.init.bind(this)
     this.addPoints = this.addPoints.bind(this)
@@ -364,43 +365,23 @@ selectPointsInsideLasso(lassoPoints) {
       const pixelX = (screenPosition.x * 0.5 + 0.5) * this.props.width;
       const pixelY = (-screenPosition.y * 0.5 + 0.5) * this.props.height;
 
-      console.log(`Checking point (${pixelX}, ${pixelY}) in screen space`);
-
-      // Check if the screen space position is inside the lasso polygon
       if (d3.polygonContains(lassoPolygon, [pixelX, pixelY])) {
-        console.log(`Point (${pixelX}, ${pixelY}) is inside the lasso polygon`);
         selectedEmbeddings.push([x, y]);
-
-        // Update bounding box
-        if (x < minX) minX = x;
-        if (x > maxX) maxX = x;
-        if (y < minY) minY = y;
-        if (y > maxY) maxY = y;
-      } else {
-        console.log(`Point (${pixelX}, ${pixelY}) is outside the lasso polygon`);
       }
     }
   });
-
-  console.log('Selected embeddings:', selectedEmbeddings);
-  console.log('Bounding Box:', { minX, maxX, minY, maxY });
 
   if (selectedEmbeddings.length === 0) {
     console.log('No points were selected inside the lasso.');
     return;
   }
 
-  this.setState({ selectedEmbeddings }); // Save the embeddings to state if needed
-
-  // Calculate the center of the selected region
-  const centerX = (minX + maxX) / 2;
-  const centerY = (minY + maxY) / 2;
-
-  console.log('Center of Selected Region:', { centerX, centerY });
-
-  // Adjust the camera to focus on the selected region
-  this.adjustCameraToBoundingBox(minX, maxX, minY, maxY, centerX, centerY);
+  this.setState({
+    selectedEmbeddings,   // Save the embeddings to state if needed
+    isPolygonDrawn: true, // Show the button
+  });
 }
+
 
 
 
@@ -449,8 +430,11 @@ disableLasso() {
   view.on("mousemove", null);
   view.on("mouseup", null);
 
+  this.setState({ isPolygonDrawn: false }); // Reset the polygon state when lasso is disabled
+
   this.setUpCamera(); // Reset camera to ensure it's ready for further interactions
 }
+
 
 
 
@@ -1027,6 +1011,7 @@ disableLasso() {
     let { width, height } = this.props;
     return (
       <div style={{ position: 'relative' }}>
+        {/* Zoom Toggle Button */}
         <button
           onClick={this.toggleZoom}
           style={{
@@ -1050,6 +1035,8 @@ disableLasso() {
             }}
           />
         </button>
+  
+        {/* Lasso Toggle Button */}
         <button
           onClick={this.toggleLasso}
           style={{
@@ -1073,6 +1060,8 @@ disableLasso() {
             }}
           />
         </button>
+  
+        {/* Reset View Button */}
         <button
           onClick={this.resetView.bind(this)}
           style={{
@@ -1087,11 +1076,34 @@ disableLasso() {
           }}
         >
           <img
-            src={reset}  // Import a reset icon or use a text label
+            src={reset}
             alt="Reset View"
             style={{ width: '24px', height: '24px' }}
           />
         </button>
+  
+        {/* Generate t-SNE Plot Button (Shown only when the lasso is active and polygon is drawn) */}
+        {this.state.isLassoActive && this.state.isPolygonDrawn && (
+          <button
+            onClick={this.handleGenerateTSNE}
+            style={{
+              position: 'absolute',
+              zIndex: 1,
+              top: '50px',
+              left: '10px',
+              backgroundColor: '#4CAF50',
+              color: 'white',
+              border: 'none',
+              padding: '10px',
+              cursor: 'pointer',
+              borderRadius: '5px',
+            }}
+          >
+            Generate t-SNE Plot
+          </button>
+        )}
+  
+        {/* Canvas Mount */}
         <div
           style={{ width: width, height: height, overflow: 'hidden' }}
           ref={mount => {
@@ -1100,7 +1112,7 @@ disableLasso() {
         />
       </div>
     );
-  }
+  }  
 }  
 
 export default Projection
