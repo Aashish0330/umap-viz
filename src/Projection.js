@@ -6,7 +6,9 @@ import * as TWEEN from '@tweenjs/tween.js'
 import zoom from './zoom.png'
 import reset from './reset.png'
 import lassoIcon from './lasso.png'
+import { withRouter } from './components/withRouter'; // Import the withRouter HOC
 //import { moveMessagePortToContext } from 'worker_threads'
+import { saveAs } from 'file-saver';
 
 // Constants for sprite sheets
 let sprite_side = 73
@@ -69,6 +71,7 @@ class Projection extends Component {
     this.toggleLasso = this.toggleLasso.bind(this);  // Bind toggleLasso here
     this.enableLasso = this.enableLasso.bind(this);
     this.disableLasso = this.disableLasso.bind(this);
+    this.handleGenerateTSNE = this.handleGenerateTSNE.bind(this);
   }
 
   
@@ -103,6 +106,10 @@ class Projection extends Component {
       }
     });
   }*/
+
+  handleGenerateTSNE() {
+    this.props.navigate('/tsne-plot');  // Use navigate passed via withRouter
+  }
 
   toggleZoom() {
     this.setState((prevState) => ({
@@ -371,15 +378,19 @@ selectPointsInsideLasso(lassoPoints) {
     }
   });
 
-  if (selectedEmbeddings.length === 0) {
-    console.log('No points were selected inside the lasso.');
-    return;
-  }
+  console.log('Selected embeddings:', selectedEmbeddings); // Log the selected embeddings
+
+  localStorage.setItem('selectedEmbeddings', JSON.stringify(selectedEmbeddings));
+  this.setState({ selectedEmbeddings }); // Save the embeddings to state if needed
 
   this.setState({
     selectedEmbeddings,   // Save the embeddings to state if needed
     isPolygonDrawn: true, // Show the button
   });
+
+  // this downloads the embedding
+  //const blob = new Blob([JSON.stringify(selectedEmbeddings)], { type: 'application/json' });
+  //saveAs(blob, 'selected_embeddings.json');
 }
 
 
@@ -1115,4 +1126,4 @@ disableLasso() {
   }  
 }  
 
-export default Projection
+export default withRouter(Projection);

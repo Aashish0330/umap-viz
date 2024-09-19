@@ -46,14 +46,6 @@ class Data extends Component {
           mnist_embeddings: scaled_embeddings,
         })
       })
-    fetch(`${process.env.PUBLIC_URL}/fashion_mnist_embeddings.json`)
-      .then(response => response.json())
-      .then(mnist_embeddings => {
-        let scaled_embeddings = this.scaleEmbeddings(mnist_embeddings)
-        this.setState({
-          mnist_embeddings: scaled_embeddings,
-        })
-      })
     fetch(`${process.env.PUBLIC_URL}/md08_umap_mnist_embeddings.json`)
       .then(response => response.json())
       .then(mnist_embeddings => {
