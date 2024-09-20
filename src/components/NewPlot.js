@@ -2,7 +2,6 @@ import React, { Component } from 'react';
 import * as THREE from 'three';
 import * as TWEEN from '@tweenjs/tween.js';
 import * as _ from 'lodash';
-import * as d3 from 'd3';
 
 class NewPlot extends Component {
   constructor(props) {
@@ -14,7 +13,7 @@ class NewPlot extends Component {
 
   // Initialize the plot (similar to Projection.js)
   init() {
-    const { width, height } = this.props;
+    const { width, height } = this.mount.getBoundingClientRect();
 
     this.scene = new THREE.Scene();
 
@@ -34,20 +33,20 @@ class NewPlot extends Component {
     this.animate();
   }
 
-  // Add points to the scene
+ 
   addPoints() {
     const { selectedEmbeddings } = this.state;
     const pointsGeometry = new THREE.BufferGeometry();
     const positions = new Float32Array(selectedEmbeddings.length * 3);
 
-    // Fill position array
+    
     selectedEmbeddings.forEach((embedding, index) => {
       positions[index * 3] = embedding[0];
       positions[index * 3 + 1] = embedding[1];
       positions[index * 3 + 2] = 0; // z coordinate is 0
     });
 
-    pointsGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    pointsGeometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
 
     const pointsMaterial = new THREE.PointsMaterial({
       size: 0.1,
@@ -59,7 +58,7 @@ class NewPlot extends Component {
   }
 
   setUpCamera() {
-    let { width, height } = this.props;
+    let { width, height } = this.mount.getBoundingClientRect();
 
     let aspect = this.camera.aspect;
     let vFOV = this.camera.fov;
@@ -87,23 +86,45 @@ class NewPlot extends Component {
     this.renderer.render(this.scene, this.camera);
   };
 
+  handleResize = () => {
+    const { width, height } = this.mount.getBoundingClientRect();
+    this.camera.aspect = width / height;
+    this.camera.updateProjectionMatrix();
+    this.renderer.setSize(width, height);
+  };
+
   componentDidMount() {
-    // Retrieve the selected embeddings from localStorage
+    
     const selectedEmbeddings = JSON.parse(localStorage.getItem('selectedEmbeddings'));
 
     if (selectedEmbeddings) {
       this.setState({ selectedEmbeddings }, () => {
-        this.init(); // Initialize the plot after setting the state
+        this.init(); 
       });
     } else {
       console.error('No selected embeddings found in localStorage');
     }
+
+    
+    window.addEventListener('resize', this.handleResize);
+  }
+
+  componentWillUnmount() {
+    window.removeEventListener('resize', this.handleResize);
   }
 
   render() {
     return (
-      <div style={{ width: '100%', height: '100%' }} ref={mount => (this.mount = mount)}>
-        {/* This will be the WebGL canvas for the t-SNE plot */}
+      <div
+        style={{
+          width: '100%',
+          height: '100%',
+          position: 'absolute', 
+          top: 0,
+          left: 0,
+        }}
+        ref={mount => (this.mount = mount)}
+      >
       </div>
     );
   }
