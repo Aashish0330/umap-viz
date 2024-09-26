@@ -1110,7 +1110,7 @@ disableLasso() {
               borderRadius: '5px',
             }}
           >
-            Generate t-SNE Plot
+            Generate New Plot
           </button>
         )}
   
