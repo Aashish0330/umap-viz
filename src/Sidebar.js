@@ -1,25 +1,25 @@
-import React, { Component } from 'react'
-import './index.css'  // Import the CSS file
+import React, { Component } from 'react';
+import './index.css';
 
 class Sidebar extends Component {
   constructor(props) {
-    super(props)
+    super(props);
     this.state = {
       isLassoSelectActive: false,
       isZoomActive: true,
-    }
-    this.handleLassoSelect = this.handleLassoSelect.bind(this)
-    this.handleZoomToggle = this.handleZoomToggle.bind(this)
+    };
+    this.handleLassoSelect = this.handleLassoSelect.bind(this);
+    this.handleZoomToggle = this.handleZoomToggle.bind(this);
   }
 
   componentDidMount() {
-    this.props.setSidebarCanvas(this.side_canvas)
-    this.handleSelectAlgorithm = this.handleSelectAlgorithm.bind(this)
+    this.props.setSidebarCanvas(this.side_canvas);
+    this.handleSelectAlgorithm = this.handleSelectAlgorithm.bind(this);
   }
 
   handleSelectAlgorithm(e) {
-    let v = e.target.value
-    this.props.selectAlgorithm(v)
+    let v = e.target.value;
+    this.props.selectAlgorithm(v);
   }
 
   handleLassoSelect() {
@@ -27,7 +27,7 @@ class Sidebar extends Component {
       isLassoSelectActive: true,
       isZoomActive: false,
     }, () => {
-      this.props.handleZoomToggle(false);  // Disable zoom in Projection.js
+      this.props.handleZoomToggle(false);
     });
   }
 
@@ -36,10 +36,9 @@ class Sidebar extends Component {
       isLassoSelectActive: false,
       isZoomActive: !prevState.isZoomActive,
     }), () => {
-      this.props.handleZoomToggle(this.state.isZoomActive);  // Toggle zoom in Projection.js
+      this.props.handleZoomToggle(this.state.isZoomActive);
     });
-  }  
-
+  }
 
   render() {
     let {
@@ -52,9 +51,9 @@ class Sidebar extends Component {
       color_array,
       algorithm_options,
       algorithm_choice,
-    } = this.props
+    } = this.props;
 
-    const { isLassoSelectActive, isZoomActive } = this.state
+    const { isLassoSelectActive, isZoomActive } = this.state;
 
     return (
       <div className="sidebar-container">
@@ -83,7 +82,7 @@ class Sidebar extends Component {
               <canvas
                 className="sidebar-canvas"
                 ref={side_canvas => {
-                  this.side_canvas = side_canvas
+                  this.side_canvas = side_canvas;
                 }}
                 width={sidebar_image_size}
                 height={sidebar_image_size}
@@ -111,18 +110,10 @@ class Sidebar extends Component {
           </div>
         </div>
         <div className="sidebar-buttons">
-          {/* <button
-            onClick={this.handleLassoSelect}
-            className={`sidebar-button ${
-              isLassoSelectActive ? 'sidebar-button-active' : ''
-            }`}
-          >
-            Lasso Select
-          </button> */}
         </div>
       </div>
-    )
+    );
   }
 }
 
-export default Sidebar
+export default Sidebar;

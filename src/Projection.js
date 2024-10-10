@@ -6,7 +6,9 @@ import * as TWEEN from '@tweenjs/tween.js'
 import zoom from './zoom.png'
 import reset from './reset.png'
 import lassoIcon from './lasso.png'
+import { withRouter } from './components/withRouter'; // Import the withRouter HOC
 //import { moveMessagePortToContext } from 'worker_threads'
+import { saveAs } from 'file-saver';
 
 // Constants for sprite sheets
 let sprite_side = 73
@@ -69,6 +71,7 @@ class Projection extends Component {
     this.toggleLasso = this.toggleLasso.bind(this);  // Bind toggleLasso here
     this.enableLasso = this.enableLasso.bind(this);
     this.disableLasso = this.disableLasso.bind(this);
+    this.handleGenerateTSNE = this.handleGenerateTSNE.bind(this);
   }
 
   
@@ -103,6 +106,10 @@ class Projection extends Component {
       }
     });
   }*/
+
+  handleGenerateTSNE() {
+    this.props.navigate('/tsne-plot');  // Use navigate passed via withRouter
+  }
 
   toggleZoom() {
     this.setState((prevState) => ({
@@ -347,8 +354,7 @@ selectPointsInsideLasso(lassoPoints) {
   const selectedEmbeddings = [];
   const point_group = this.scene.children[0].children;
 
-  let minX = Infinity, maxX = -Infinity;
-  let minY = Infinity, maxY = -Infinity;
+  let globalIndex = 0;  // Keep track of the global index for correct label retrieval
 
   point_group.forEach(points => {
     const positions = points.geometry.attributes.position.array;
@@ -365,22 +371,76 @@ selectPointsInsideLasso(lassoPoints) {
       const pixelX = (screenPosition.x * 0.5 + 0.5) * this.props.width;
       const pixelY = (-screenPosition.y * 0.5 + 0.5) * this.props.height;
 
+      // Check if the point lies inside the lasso polygon
       if (d3.polygonContains(lassoPolygon, [pixelX, pixelY])) {
-        selectedEmbeddings.push([x, y]);
+        // Fetch the correct label using the global index
+        const label = this.props.mnist_labels[globalIndex];
+
+        // Push the selected embedding and its corresponding label
+        selectedEmbeddings.push({ embedding: [x, y], label });
       }
+
+      globalIndex++;  // Increment the global index for each point
     }
   });
 
-  if (selectedEmbeddings.length === 0) {
-    console.log('No points were selected inside the lasso.');
+  // Log the selected embeddings with labels
+  console.log('Selected embeddings with labels:', selectedEmbeddings);
+
+  // Store the embeddings to the state and localStorage
+  this.setState({ selectedEmbeddings }, () => {
+    localStorage.setItem('selectedEmbeddings', JSON.stringify(selectedEmbeddings));
+  });
+
+  // After the polygon is drawn, set the state to show the "Download" button
+  this.setState({
+    selectedEmbeddings,   // Save the embeddings to state if needed
+    isPolygonDrawn: true, // Show the download button
+  });
+}
+
+// Utility function to convert the selected embeddings to CSV format
+convertToCSV(selectedEmbeddings) {
+  const header = ['x', 'y', 'label'];
+  const rows = selectedEmbeddings.map(item => {
+    const { embedding, label } = item;
+    return `${embedding[0]},${embedding[1]},${label}`;
+  });
+  return [header.join(','), ...rows].join('\n');
+}
+
+// Function to download the selected embeddings as a CSV file
+downloadCSV() {
+  const { selectedEmbeddings, selectedLabels } = this.state;
+
+  if (!selectedEmbeddings || !selectedLabels || selectedEmbeddings.length === 0) {
+    console.error('No embeddings selected to download.');
     return;
   }
 
-  this.setState({
-    selectedEmbeddings,   // Save the embeddings to state if needed
-    isPolygonDrawn: true, // Show the button
+  // Prepare CSV data
+  let csvContent = 'data:text/csv;charset=utf-8,Embedding X,Embedding Y,Label\n';
+  selectedEmbeddings.forEach((embedding, index) => {
+    const label = selectedLabels[index];
+    const row = `${embedding[0]},${embedding[1]},${label}`;
+    csvContent += row + '\n';
   });
+
+  // Create a download link
+  const encodedUri = encodeURI(csvContent);
+  const link = document.createElement('a');
+  link.setAttribute('href', encodedUri);
+  link.setAttribute('download', 'selected_embeddings.csv');
+  document.body.appendChild(link);
+
+  // Programmatically click the link to trigger the download
+  link.click();
+
+  // Clean up
+  document.body.removeChild(link);
 }
+
+
 
 
 
@@ -1099,11 +1159,31 @@ disableLasso() {
               borderRadius: '5px',
             }}
           >
-            Generate t-SNE Plot
+            Generate New Plot
           </button>
         )}
   
-        {/* Canvas Mount */}
+        {/* Download Selected Embeddings Button */}
+        {this.state.isPolygonDrawn && (
+          <button
+            onClick={() => this.downloadCSV()}
+            style={{
+              position: 'absolute',
+              zIndex: 10,
+              top: '10px',
+              left: '100px',
+              backgroundColor: '#4CAF50',
+              color: 'white',
+              padding: '10px',
+              border: 'none',
+              cursor: 'pointer',
+            }}
+          >
+            Download Selected Embeddings
+          </button>
+        )}
+  
+        {/* Embedding plot and other visualizations */}
         <div
           style={{ width: width, height: height, overflow: 'hidden' }}
           ref={mount => {
@@ -1112,7 +1192,7 @@ disableLasso() {
         />
       </div>
     );
+    }
   }  
-}  
 
-export default Projection
+export default withRouter(Projection);
