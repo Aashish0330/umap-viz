@@ -411,18 +411,18 @@ convertToCSV(selectedEmbeddings) {
 
 // Function to download the selected embeddings as a CSV file
 downloadCSV() {
-  const { selectedEmbeddings, selectedLabels } = this.state;
+  const { selectedEmbeddings } = this.state;
 
-  if (!selectedEmbeddings || !selectedLabels || selectedEmbeddings.length === 0) {
+  if (!selectedEmbeddings || selectedEmbeddings.length === 0) {
     console.error('No embeddings selected to download.');
     return;
   }
 
-  // Prepare CSV data
-  let csvContent = 'data:text/csv;charset=utf-8,Embedding X,Embedding Y,Label\n';
-  selectedEmbeddings.forEach((embedding, index) => {
-    const label = selectedLabels[index];
-    const row = `${embedding[0]},${embedding[1]},${label}`;
+  // Prepare CSV data with updated headers
+  let csvContent = 'data:text/csv;charset=utf-8,Serial Num,X Coord,Y Coord,Label\n';
+  selectedEmbeddings.forEach((item, index) => {
+    const { embedding, label } = item;
+    const row = `${index + 1},${embedding[0]},${embedding[1]},${label}`;
     csvContent += row + '\n';
   });
 
@@ -439,8 +439,6 @@ downloadCSV() {
   // Clean up
   document.body.removeChild(link);
 }
-
-
 
 
 
@@ -1170,8 +1168,8 @@ disableLasso() {
             style={{
               position: 'absolute',
               zIndex: 10,
-              top: '10px',
-              left: '100px',
+              bottom: '10px',
+              left: '10px',
               backgroundColor: '#4CAF50',
               color: 'white',
               padding: '10px',
